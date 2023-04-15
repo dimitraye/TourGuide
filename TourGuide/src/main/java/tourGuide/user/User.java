@@ -9,7 +9,7 @@ import gpsUtil.location.VisitedLocation;
 import tripPricer.Provider;
 
 public class User {
-	private final UUID userId;
+	private UUID USER_ID;
 	private final String userName;
 	private String phoneNumber;
 	private String emailAddress;
@@ -18,15 +18,19 @@ public class User {
 	private List<UserReward> userRewards = new ArrayList<>();
 	private UserPreferences userPreferences = new UserPreferences();
 	private List<Provider> tripDeals = new ArrayList<>();
-	public User(UUID userId, String userName, String phoneNumber, String emailAddress) {
-		this.userId = userId;
+	public User(UUID USER_ID, String userName, String phoneNumber, String emailAddress) {
+		this.USER_ID = USER_ID;
 		this.userName = userName;
 		this.phoneNumber = phoneNumber;
 		this.emailAddress = emailAddress;
 	}
 	
-	public UUID getUserId() {
-		return userId;
+	public UUID getUSER_ID() {
+		return USER_ID;
+	}
+
+	public void setUSER_ID(UUID user_id) {
+		this.USER_ID = user_id;
 	}
 	
 	public String getUserName() {
