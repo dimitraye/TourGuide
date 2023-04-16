@@ -111,18 +111,8 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for(Attraction attraction : gpsUtil.getAttractions()) {
-			if(rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
-		
-		return nearbyAttractions;
-	}
 
-	public List<AttractionDTO> get5NearByAttractions(VisitedLocation visitedLocation, User user) {
+	public List<AttractionDTO> get5ClosestAttractions(VisitedLocation visitedLocation, User user) {
 		//Récupérer la liste de toutes les attractions
 		List<Attraction> nearbyAttractions = new ArrayList<>();
 		nearbyAttractions.addAll(gpsUtil.getAttractions());
@@ -232,9 +222,10 @@ public class TourGuideService {
 		logger.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
 	}
 	
-	private void generateUserLocationHistory(User user) {
+	public void generateUserLocationHistory(User user) {
 		IntStream.range(0, 3).forEach(i-> {
-			user.addToVisitedLocations(new VisitedLocation(user.getUSER_ID(), new Location(generateRandomLatitude(), generateRandomLongitude()), getRandomTime()));
+			user.addToVisitedLocations(new VisitedLocation(user.getUSER_ID(), new Location(generateRandomLatitude(),
+					generateRandomLongitude()), getRandomTime()));
 		});
 	}
 	
