@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import com.jsoniter.output.JsonStream;
@@ -20,8 +19,6 @@ import tourGuide.user.AttractionDTO;
 import tourGuide.user.User;
 import tourGuide.user.UserPreferences;
 import tripPricer.Provider;
-
-import javax.validation.Valid;
 
 @Slf4j
 @RestController
@@ -50,11 +47,11 @@ public class TourGuideController {
         // The distance in miles between the user's location and each of the attractions.
         // The reward points for visiting each Attraction.
         //    Note: Attraction reward points can be gathered from RewardsCentral
-    @RequestMapping("/getNearbyAttractions") 
-    public ResponseEntity<List<AttractionDTO>> getNearbyAttractions(@RequestParam String userName) {
+    @RequestMapping("/get5ClosestAttractions")
+    public ResponseEntity<List<AttractionDTO>> get5ClosestAttractions(@RequestParam String userName) {
         User user = getUser(userName);
     	VisitedLocation visitedLocation = tourGuideService.getUserLocation(user);
-        return new ResponseEntity<>(tourGuideService.get5NearByAttractions(visitedLocation, user), HttpStatus.OK);
+        return new ResponseEntity<>(tourGuideService.get5ClosestAttractions(visitedLocation, user), HttpStatus.OK);
 
     }
 
