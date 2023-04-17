@@ -111,6 +111,13 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
+	/*public VisitedLocation optimizedTrackUserLocation(User user) {
+		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUSER_ID());
+		user.addToVisitedLocations(visitedLocation);
+		rewardsService.calculateRewards(user);
+		return visitedLocation;
+	}*/
+
 
 	public List<AttractionDTO> get5ClosestAttractions(VisitedLocation visitedLocation, User user) {
 		//Récupérer la liste de toutes les attractions

@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 import tripPricer.Provider;
 
@@ -72,11 +74,25 @@ public class User {
 	public void clearVisitedLocations() {
 		visitedLocations.clear();
 	}
-	
+
+	/**
+	 * Ajout d'un userReward à la liste de reward d'un user
+	 * @param newUserReward
+	 */
 	public void addUserReward(UserReward newUserReward) {
-		if(userRewards.stream().noneMatch(r -> r.attraction.attractionName.equals(newUserReward.attraction.attractionName))) {
+		if(attractionCouldBeRewarded(newUserReward.attraction)) {
 			userRewards.add(newUserReward);
 		}
+	}
+
+	/**
+	 * if the attraction is not already in the list userRewards then add this attraction into the list
+	 * @param attraction
+	 * @return boolean
+	 */
+	public boolean attractionCouldBeRewarded(Attraction attraction) {
+		List<UserReward> userRewardList = new CopyOnWriteArrayList(userRewards);
+		return userRewardList.stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName));
 	}
 	
 	public List<UserReward> getUserRewards() {

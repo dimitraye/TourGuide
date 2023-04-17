@@ -1,9 +1,6 @@
 package tourGuide.service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
@@ -42,25 +39,46 @@ public class RewardsService {
 	public void calculateRewards(User user) {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		List<UserReward> userRewardsCopy = new CopyOnWriteArrayList(user.getUserRewards());
 
 
-		//Pour toutes visitedLocation de la liste userLocations
 		for(VisitedLocation visitedLocation : userLocations) {
-			//Pour toutes attraction de la liste attractions
 			for(Attraction attraction : attractions) {
-				//Créer un stream de UserRewards qui contient des userRewards à la condition que le nom des attractions des userRewards corresponde au nom des attractions de la liste attractions
-				Stream<UserReward> rewardsList = userRewardsCopy.stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName));
-				//On vérifie que le nombre d'éléments de rewardsList vaut 0
-				if(userRewardsCopy.stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-					//Si nearAttraction vaut true
+				boolean attractionShouldBeRewarded = user.attractionCouldBeRewarded(attraction);
+
+				if(attractionShouldBeRewarded) {
 					if(nearAttraction(visitedLocation, attraction)) {
-						//Ajoute un nouveau userReward
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}
 				}
 			}
 		}
+	}
+
+	public void optimizedCalculateRewards(User user) {
+		List<VisitedLocation> userLocations = user.getVisitedLocations();
+		List<Attraction> attractions = gpsUtil.getAttractions();
+
+
+		for(VisitedLocation visitedLocation : userLocations) {
+			for(Attraction attraction : attractions) {
+				boolean attractionShouldBeRewarded = user.attractionCouldBeRewarded(attraction);
+
+				if(attractionShouldBeRewarded) {
+					if(nearAttraction(visitedLocation, attraction)) {
+						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+					}
+				}
+			}
+		}
+
+		//Créer un thread
+
+		//Démarrer le thread
+
+		//CompletableFuture
+
+		//arreter le thread
+
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
