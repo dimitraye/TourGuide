@@ -1,6 +1,14 @@
 package tourGuide.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
@@ -22,7 +30,10 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	
+
+	ExecutorService executorService = Executors.newFixedThreadPool(44);
+
+
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
@@ -35,50 +46,42 @@ public class RewardsService {
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
-	
+
 	public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
-		List<Attraction> attractions = gpsUtil.getAttractions();
+		List<Attraction> attractions = new CopyOnWriteArrayList<>();
+		List<VisitedLocation> visitedLocations = new CopyOnWriteArrayList<>();
+		List<UserReward> userRewards = new CopyOnWriteArrayList<>();
 
 
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				boolean attractionShouldBeRewarded = user.attractionCouldBeRewarded(attraction);
+		attractions.addAll(gpsUtil.getAttractions());
+		visitedLocations.addAll(user.getVisitedLocations());
+		userRewards.addAll(user.getUserRewards());
 
-				if(attractionShouldBeRewarded) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+		List<CompletableFuture<User>> completableFutures = new ArrayList<>(); //List to hold all the completable futures
+
+		visitedLocations.forEach(visitedLocation -> {
+			attractions.parallelStream().forEach(attraction -> {
+				if (user.attractionCouldBeRewarded(attraction)) {
+
+					if (nearAttraction(visitedLocation, attraction)) {
+						CompletableFuture<User> future = CompletableFuture.supplyAsync(() ->
+										getRewardPoints(attraction, user), executorService)
+								.thenApply(points -> {
+									UserReward userReward = new UserReward(visitedLocation, attraction, points);
+									user.addUserReward(userReward);
+									return user;
+								});
+						completableFutures.add(future);
 					}
 				}
-			}
-		}
-	}
+			});
+		});
 
-	public void optimizedCalculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
-		List<Attraction> attractions = gpsUtil.getAttractions();
-
-
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				boolean attractionShouldBeRewarded = user.attractionCouldBeRewarded(attraction);
-
-				if(attractionShouldBeRewarded) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-					}
-				}
-			}
-		}
-
-		//Créer un thread
-
-		//Démarrer le thread
-
-		//CompletableFuture
-
-		//arreter le thread
-
+		CompletableFuture.allOf(completableFutures
+						.stream().filter(Objects::nonNull)
+						.collect(Collectors.toList())
+						.toArray(new CompletableFuture[0]))
+				.join();
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

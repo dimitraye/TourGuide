@@ -32,6 +32,7 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 		
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
+		tourGuideService.generateUserLocationHistory(user);
 		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
 
 		tourGuideService.tracker.stopTracking();
@@ -91,6 +92,7 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 		
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
+		tourGuideService.generateUserLocationHistory(user);
 		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
 
 		///TODO : voir avec le mentor  ---> Qu'est-ce que doit faire cette méthode.

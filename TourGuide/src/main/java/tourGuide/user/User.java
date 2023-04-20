@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
+import org.springframework.util.CollectionUtils;
 import tripPricer.Provider;
 
 public class User {
@@ -108,7 +109,7 @@ public class User {
 	}
 
 	public VisitedLocation getLastVisitedLocation() {
-		return visitedLocations.get(visitedLocations.size() - 1);
+		return !CollectionUtils.isEmpty(visitedLocations) ? visitedLocations.get(visitedLocations.size() - 1) : null;
 	}
 	
 	public void setTripDeals(List<Provider> tripDeals) {

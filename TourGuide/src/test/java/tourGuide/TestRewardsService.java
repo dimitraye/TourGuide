@@ -25,6 +25,7 @@ public class TestRewardsService {
 
 	@Test
 	public void userGetRewards() {
+
 		LocaleContextHolder.getLocale().setDefault(new Locale("en", "US"));
 
 		GpsUtil gpsUtil = new GpsUtil();
