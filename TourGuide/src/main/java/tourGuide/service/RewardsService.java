@@ -2,7 +2,12 @@ package tourGuide.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
@@ -25,7 +30,10 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	
+
+	ExecutorService executorService = Executors.newFixedThreadPool(44);
+
+
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
@@ -38,29 +46,42 @@ public class RewardsService {
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
-	
+
 	public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
-		List<Attraction> attractions = gpsUtil.getAttractions();
-		List<UserReward> userRewardsCopy = new CopyOnWriteArrayList(user.getUserRewards());
+		List<Attraction> attractions = new CopyOnWriteArrayList<>();
+		List<VisitedLocation> visitedLocations = new CopyOnWriteArrayList<>();
+		List<UserReward> userRewards = new CopyOnWriteArrayList<>();
 
 
-		//Pour toutes visitedLocation de la liste userLocations
-		for(VisitedLocation visitedLocation : userLocations) {
-			//Pour toutes attraction de la liste attractions
-			for(Attraction attraction : attractions) {
-				//Créer un stream de UserRewards qui contient des userRewards à la condition que le nom des attractions des userRewards corresponde au nom des attractions de la liste attractions
-				Stream<UserReward> rewardsList = userRewardsCopy.stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName));
-				//On vérifie que le nombre d'éléments de rewardsList vaut 0
-				if(userRewardsCopy.stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-					//Si nearAttraction vaut true
-					if(nearAttraction(visitedLocation, attraction)) {
-						//Ajoute un nouveau userReward
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+		attractions.addAll(gpsUtil.getAttractions());
+		visitedLocations.addAll(user.getVisitedLocations());
+		userRewards.addAll(user.getUserRewards());
+
+		List<CompletableFuture<User>> completableFutures = new ArrayList<>(); //List to hold all the completable futures
+
+		visitedLocations.forEach(visitedLocation -> {
+			attractions.parallelStream().forEach(attraction -> {
+				if (user.attractionCouldBeRewarded(attraction)) {
+
+					if (nearAttraction(visitedLocation, attraction)) {
+						CompletableFuture<User> future = CompletableFuture.supplyAsync(() ->
+										getRewardPoints(attraction, user), executorService)
+								.thenApply(points -> {
+									UserReward userReward = new UserReward(visitedLocation, attraction, points);
+									user.addUserReward(userReward);
+									return user;
+								});
+						completableFutures.add(future);
 					}
 				}
-			}
-		}
+			});
+		});
+
+		CompletableFuture.allOf(completableFutures
+						.stream().filter(Objects::nonNull)
+						.collect(Collectors.toList())
+						.toArray(new CompletableFuture[0]))
+				.join();
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

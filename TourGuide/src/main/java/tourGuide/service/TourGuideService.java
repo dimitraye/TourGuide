@@ -3,6 +3,9 @@ package tourGuide.service;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -31,7 +34,9 @@ public class TourGuideService {
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
 	boolean testMode = true;
-	
+	ExecutorService executorService = Executors.newFixedThreadPool(64);
+
+
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsService = rewardsService;
@@ -45,21 +50,14 @@ public class TourGuideService {
 		tracker = new Tracker(this);
 		addShutDownHook();
 	}
-	
+
 	public List<UserReward> getUserRewards(User user) {
 		return user.getUserRewards();
 	}
 
 	public boolean updateUserPreferences(String userName, UserPreferences userPreferences) {
-		//Récuperer un user par son userName
 		User user = getUser(userName);
-
-		//Update ses préférences depuis user
 		user.setUserPreferences(userPreferences);
-
-		//update la map
-
-
 		return true;
 	}
 	
@@ -103,11 +101,20 @@ public class TourGuideService {
 		user.setTripDeals(providers);
 		return providers;
 	}
-	
+
 	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUSER_ID());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
+
+		assert user.getLastVisitedLocation() != null : "last visit should not be null";
+
+		CompletableFuture<VisitedLocation> future = CompletableFuture.supplyAsync(() ->
+						getUserLocation(user), executorService)
+				.thenApply(visitedLocation -> {
+					user.addToVisitedLocations(visitedLocation);
+					rewardsService.calculateRewards(user);
+					return visitedLocation;
+				});
+
+		VisitedLocation visitedLocation = future.join();
 		return visitedLocation;
 	}
 
