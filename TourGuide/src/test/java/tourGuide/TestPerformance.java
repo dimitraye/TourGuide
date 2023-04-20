@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import gpsUtil.GpsUtil;
@@ -17,8 +16,8 @@ import rewardCentral.RewardCentral;
 import tourGuide.helper.InternalTestHelper;
 import tourGuide.service.RewardsService;
 import tourGuide.service.TourGuideService;
-import tourGuide.user.User;
-import tourGuide.user.UserReward;
+import tourGuide.service.UserService;
+import tourGuide.model.user.User;
 
 public class TestPerformance {
 	
@@ -49,10 +48,11 @@ public class TestPerformance {
 
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+		UserService userService = new UserService();
 		// Users should be incremented up to 100,000, and test finishes within 15 minutes
 		int nbUsers = 100;
 		InternalTestHelper.setInternalUserNumber(nbUsers);
-		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService, userService);
 
 		List<User> allUsers = new ArrayList<>();
 		allUsers = tourGuideService.getAllUsers();
@@ -87,6 +87,7 @@ public class TestPerformance {
 	public void highVolumeGetRewards() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+		UserService userService = new UserService();
 
 		// Users should be incremented up to 100,000, and test finishes within 20 minutes
 		long maxTime = TimeUnit.MINUTES.toSeconds(20);
@@ -96,13 +97,13 @@ public class TestPerformance {
 
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService, userService);
 
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		List<User> allUsers = new ArrayList<>();
 		allUsers.addAll(tourGuideService.getAllUsers());
 
-		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUSER_ID(), attraction, new Date())));
+		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
 		allUsers.parallelStream().forEach(u -> rewardsService.calculateRewards(u));
 
