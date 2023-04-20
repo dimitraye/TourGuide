@@ -1,4 +1,4 @@
-package tourGuide.user;
+package tourGuide.DTO;
 
 import gpsUtil.location.Location;
 
